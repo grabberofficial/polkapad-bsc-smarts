@@ -8,10 +8,9 @@ compiler:
       - '@openzeppelin=OpenZeppelin/openzeppelin-contracts@4.6.0'
 dotenv: .env
 addresses:
-  dot: ${BSC_MAINNET_DOT_ADDRESS}
-  plpd: ${BSC_MAINNET_PLPD_ADDRESS}
-  aggregator: ${BSC_TESTNET_AGGREGATOR_DOT_USD_ADDRESS}
-  target_wallet: ${MULTISIG_ADDRESS}
+  dot: ${BSC_DOT_ADDRESS}
+  feed: ${BSC_DOT_USD}
+  multisig_wallet: ${MULTISIG_ADDRESS}
   account: ${PUBLIC_KEY}
 networks:
     default: ${DEFAULT_NETWORK}
