@@ -54,7 +54,6 @@ def test_lock_5_dots(dot, whitelist, locker, plpd, multisig, sender):
     expected_amount = actual_allocation_size
 
     assert actual_amount == expected_amount
-    print("BALANCE \n ", actual_plpd_balance)
     assert actual_plpd_balance == plpd_sender_balance
 
 def test_lock_more_than_max_allocation_size(dot, whitelist, locker, plpd, multisig, sender):
