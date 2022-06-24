@@ -66,7 +66,9 @@ contract Locker {
         _locks[msg.sender] = lockedAmount.add(toLockAmount_);
 
         _dotContract.transferFrom(msg.sender, _multisig, toLockAmount_);
-        _plpdContract.mint(msg.sender, toLockAmount_.mul(dotPrice).mul(3).sub(10)); // probably need to replace it with argument
+
+        uint256 plpdAmount = toLockAmount_.mul(dotPrice).div(DENOMINATOR).mul(3).div(10);
+        _plpdContract.mint(msg.sender, plpdAmount); // probably need to replace it with argument
 
         emit Locked(msg.sender, toLockAmount_);
     }

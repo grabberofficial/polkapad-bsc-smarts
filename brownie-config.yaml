@@ -9,8 +9,10 @@ compiler:
 dotenv: .env
 addresses:
   dot: ${BSC_DOT_ADDRESS}
+  dot_owner: ${BSC_DOT_OWNER}
   feed: ${BSC_DOT_USD}
   multisig_wallet: ${MULTISIG_ADDRESS}
   account: ${PUBLIC_KEY}
+  private_key: ${PRIVATE_KEY}
 networks:
     default: ${DEFAULT_NETWORK}

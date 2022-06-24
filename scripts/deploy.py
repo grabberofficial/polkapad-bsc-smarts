@@ -1,23 +1,52 @@
-from brownie import accounts, network, config, Locker
+from brownie import accounts, network, config, Locker, PolkapadERC20, Whitelist
 
-def deploy_locker():
-    account = get_account()
-    Locker.deploy(
-        config["addresses"]["plpd"], 
+def deploy_whitelist():
+    owner_account = get_account()
+    multisig_account = accounts[1]
+
+    contract = Whitelist.deploy(multisig_account, 60, { "from": owner_account })
+
+    return contract
+
+def deploy_plpd(locker_contract):
+    owner_account = get_account()
+
+    contract = PolkapadERC20.deploy(
+    "Polkapad", 
+    "PLPD", 
+    locker_contract, 
+    { "from": owner_account })
+
+    return contract
+
+def deploy_locker(whitelist_contract):
+    owner_account = get_account()
+    multisig_account = accounts[1]
+
+    contract = Locker.deploy(
+        multisig_account,
         config["addresses"]["dot"], 
-        config["addresses"]["aggregator"],
-        config["addresses"]["target_wallet"],
-        { "from": account })
+        config["addresses"]["feed"],
+        whitelist_contract,
+        { "from": owner_account })
+
+    return contract
 
 def get_account(): 
     if network.show_active() == "development":
         return accounts[0]
     else:
-        return accounts.load("locker-account")
+        return accounts.add(config["addresses"]["private_key"])
 
-def main():
-    print("Locker contract deploying is started...")
+def deploy():
+    print("Deploying is started...")
 
-    deploy_locker()
+    owner_account = get_account()
+
+    whitelist = deploy_whitelist()
+    locker = deploy_locker(whitelist)
+    plpd = deploy_plpd(locker)
+
+    locker.setPlpdContractAddress(plpd, { "from": owner_account })
     
-    print("Locker contract has deployed")
+    print("Contracts has deployed")

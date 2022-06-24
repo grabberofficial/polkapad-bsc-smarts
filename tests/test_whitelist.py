@@ -1,15 +1,22 @@
 from brownie import accounts
 from scripts.deploy import deploy_whitelist
 
-def test_added_to_whitelist():
-    contract = deploy_whitelist()
-    multisig_account = accounts[1]
+import pytest
 
+@pytest.fixture
+def whitelist():
+    return deploy_whitelist()
+
+@pytest.fixture
+def multisig():
+    return accounts[1]
+
+def test_added_to_whitelist(whitelist, multisig):
     participiant = accounts[2]
 
-    contract.add(participiant, 50, { "from": multisig_account })
+    whitelist.add(participiant, 50, { "from": multisig })
 
-    actual = contract.participants(participiant)
-    expected = (True, 50)
+    actual = whitelist.isWhitelisted(participiant)
+    expected = True
 
-    assert expected == actual
+    assert actual == expected
