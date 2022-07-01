@@ -4,12 +4,8 @@ pragma solidity ^0.8.7;
 
 contract Whitelist {
 
-    struct Participant {
-        bool approved;
-        uint256 maxAllocationSize;
-    }
-
-    mapping (address => Participant) public participants;
+    mapping (address => bool) public whitelist;
+    mapping (address => uint256) public allocationSizes;
 
     uint256 public defaultAllocationSize;
     address public multisigAddress;
@@ -18,8 +14,8 @@ contract Whitelist {
     event RemovedFromWhitelist(address indexed account);
     event ChangedMaxAllocationSize(
         address indexed account, 
-        uint256 oldAllocationSize, 
-        uint256 newAllocationSize);
+        uint256 oldMaxAllocationSize, 
+        uint256 newMaxAllocationSize);
 
     constructor(
         address multisigAddress_, 
@@ -35,32 +31,29 @@ contract Whitelist {
     }
 
     function add(address address_, uint256 allocationSize_) public multisig {
-        participants[address_] = Participant({
-            approved: true,
-            maxAllocationSize: allocationSize_ != 0 ? allocationSize_ : defaultAllocationSize 
-        });
-        
+        whitelist[address_] = true;
+        if (allocationSize_ != 0 && allocationSize_ != defaultAllocationSize) {
+            allocationSizes[address_] = allocationSize_;
+        }
+
         emit AddedToWhitelist(address_);
     }
 
     function remove(address address_) public multisig {
-        participants[address_].approved = false;
+        delete whitelist[address_];
+        if (allocationSizes[address_] != 0) {
+            delete allocationSizes[address_];
+        }
         
         emit RemovedFromWhitelist(address_);
     }
 
-    function changeAllocationSize(address address_, uint256 allocationSize_) public multisig {
-        Participant memory oldParticipant = participants[address_];
-
-        participants[address_] = Participant({
-            approved: oldParticipant.approved,
-            maxAllocationSize: allocationSize_ != 0 ? allocationSize_ : defaultAllocationSize 
-        });
+    function changeAllocationSize(address address_, uint256 newMaxAllocationSize_) public multisig {
+        require(whitelist[address_] == true, "Whitelist does not contain provided address");
         
-        emit ChangedMaxAllocationSize(address_, oldParticipant.maxAllocationSize, allocationSize_);
-    }
+        uint256 oldMaxAllocationSize = allocationSizes[address_];
+        allocationSizes[address_] = newMaxAllocationSize_;
 
-    function isWhitelisted(address address_) public view returns (bool) {
-        return participants[address_].approved;
+        emit ChangedMaxAllocationSize(address_, oldMaxAllocationSize, newMaxAllocationSize_);
     }
 }

@@ -3,30 +3,36 @@ from brownie import accounts, network, config, Locker, PolkapadERC20, Whitelist
 def deploy_whitelist():
     owner_account = get_account()
     multisig_account = accounts[1]
+    default_max_allocation_size = 100 * 10e7
 
-    contract = Whitelist.deploy(multisig_account, 60, { "from": owner_account })
+    contract = Whitelist.deploy(
+        multisig_account, 
+        default_max_allocation_size, 
+        { "from": owner_account })
 
     return contract
 
-def deploy_plpd(locker_contract):
+def deploy_plpd(multisig_account):
     owner_account = get_account()
 
     contract = PolkapadERC20.deploy(
     "Polkapad", 
     "PLPD", 
-    locker_contract, 
+    multisig_account, 
     { "from": owner_account })
 
     return contract
 
-def deploy_locker(whitelist_contract):
+def deploy_locker(polkapad_contract, whitelist_contract):
     owner_account = get_account()
     multisig_account = accounts[1]
+
 
     contract = Locker.deploy(
         multisig_account,
         config["addresses"]["dot"], 
         config["addresses"]["feed"],
+        polkapad_contract,
         whitelist_contract,
         { "from": owner_account })
 
@@ -38,15 +44,15 @@ def get_account():
     else:
         return accounts.add(config["addresses"]["private_key"])
 
-def deploy():
+def main():
     print("Deploying is started...")
 
-    owner_account = get_account()
+    multisig_account = accounts[1]
 
     whitelist = deploy_whitelist()
-    locker = deploy_locker(whitelist)
-    plpd = deploy_plpd(locker)
+    plpd = deploy_plpd(multisig_account)
+    locker = deploy_locker(plpd, whitelist)
 
-    locker.setPlpdContractAddress(plpd, { "from": owner_account })
-    
+    plpd.setLockerContractAddress(locker, { "from": multisig_account })
+
     print("Contracts has deployed")

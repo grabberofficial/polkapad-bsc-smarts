@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.7;
 
-import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import '@openzeppelin/contracts/utils/math/SafeMath.sol';
 import '@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol';
 import './PolkapadERC20.sol';
@@ -11,17 +11,14 @@ import './Whitelist.sol';
 contract Locker {
     using SafeMath for uint256;
 
-    uint256 public constant DENOMINATOR = 10e7;
-
     mapping (address => uint256) public _locks;
 
-    IERC20 public _dotContract;
+    ERC20 public _dotContract;
     PolkapadERC20 public _plpdContract;
     Whitelist public _whitelistContract;
 
     AggregatorV3Interface public _dotPriceFeed;
 
-    address public _owner;
     address public _multisig;
 
     event Locked(address indexed account, uint256 allocation);
@@ -30,52 +27,56 @@ contract Locker {
         address multisig_,
         address dotContract_, 
         address dotFeedContract_,
+        address plpdContract_,
         address whitelistContract_) {
-        _owner = msg.sender;
-
         _multisig = multisig_;
 
-        _dotContract = IERC20(dotContract_);
+        _plpdContract = PolkapadERC20(plpdContract_);
+        _dotContract = ERC20(dotContract_);
         _whitelistContract = Whitelist(whitelistContract_);
 
         _dotPriceFeed = AggregatorV3Interface(dotFeedContract_);
     }
 
-    modifier owner {
-        require(msg.sender == _owner);
-        _;
-    }
-
     modifier whitelisted {
-        require(_whitelistContract.isWhitelisted(msg.sender));
+        require(_whitelistContract.whitelist(msg.sender) == true);
         _;
     }
 
-    function lock(uint256 toLockAmount_) public whitelisted {
+    modifier multisig {
+        require(msg.sender == _multisig);
+        _;
+    }
+
+    function lock(uint256 allocation_) public whitelisted {
         uint256 dotPrice = getLatestPrice();
 
-        uint256 lockedAmount = _locks[msg.sender];
-        uint256 toLockAmount = lockedAmount.add(toLockAmount_).mul(dotPrice).div(DENOMINATOR);
+        uint256 lockedAllocation = _locks[msg.sender];
+        uint256 allocationInUsdt = lockedAllocation.add(allocation_).mul(dotPrice);
 
-        (/* approved */, uint256 maxAllocationSize) = _whitelistContract.participants(msg.sender);
+        uint256 maxAllocationSize = _whitelistContract.allocationSizes(msg.sender);
+        if (maxAllocationSize == 0) {
+            maxAllocationSize = _whitelistContract.defaultAllocationSize();
+        }
 
         require(
-            toLockAmount < maxAllocationSize,
+            allocationInUsdt < maxAllocationSize,
             "Locker: you cannot allocate more than max allocation value");
 
-        _locks[msg.sender] = lockedAmount.add(toLockAmount_);
+        _dotContract.transferFrom(msg.sender, _multisig, allocation_);
 
-        _dotContract.transferFrom(msg.sender, _multisig, toLockAmount_);
+        uint256 plpdAmount = allocationInUsdt.mul(3).div(10);
+        _plpdContract.mint(msg.sender, plpdAmount);
 
-        uint256 plpdAmount = toLockAmount_.mul(dotPrice).div(DENOMINATOR).mul(3).div(10);
-        _plpdContract.mint(msg.sender, plpdAmount); // probably need to replace it with argument
+        _locks[msg.sender] = lockedAllocation.add(allocation_);
 
-        emit Locked(msg.sender, toLockAmount_);
+        emit Locked(msg.sender, allocation_);
     }
 
-    function setPlpdContractAddress(address plpdContract_) public owner {
-        _plpdContract = PolkapadERC20(plpdContract_);
-    }
+    function burnPlpd(address address_) public multisig {
+        uint256 plpdAmount = _plpdContract.balanceOf(address_);
+        _plpdContract.burn(address_, plpdAmount);
+     }
 
     function getLatestPrice() public view returns (uint256) {
         (
@@ -85,7 +86,6 @@ contract Locker {
             /*uint timeStamp*/,
             /*uint80 answeredInRound*/
         ) = _dotPriceFeed.latestRoundData();
-
-        return uint256(price);     
+        return uint256(price);
     }
 }
