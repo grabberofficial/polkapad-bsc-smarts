@@ -1,58 +1,60 @@
 from brownie import accounts, network, config, Locker, PolkapadERC20, Whitelist
 
-def deploy_whitelist():
-    owner_account = get_account()
-    multisig_account = accounts[1]
-    default_max_allocation_size = 100 * 10e7
+OWNER = (0, "owner_pk")
+MULTISIG = (1, "multisig_pk")
+BURNER = (2, "burner_pk")
 
+def deploy_whitelist(owner, multisig, default_max_allocation_size):
     contract = Whitelist.deploy(
-        multisig_account, 
+        multisig, 
         default_max_allocation_size, 
-        { "from": owner_account })
+        { "from": owner })
 
     return contract
 
-def deploy_plpd(multisig_account):
-    owner_account = get_account()
-
+def deploy_plpd(owner, multisig):
     contract = PolkapadERC20.deploy(
     "Polkapad", 
     "PLPD", 
-    multisig_account, 
-    { "from": owner_account })
+    multisig, 
+    { "from": owner })
 
     return contract
 
-def deploy_locker(polkapad_contract, whitelist_contract):
-    owner_account = get_account()
-    multisig_account = accounts[1]
-
-
+def deploy_locker(owner, multisig, burner, polkapad, whitelist):
     contract = Locker.deploy(
-        multisig_account,
+        multisig,
+        burner,
         config["addresses"]["dot"], 
         config["addresses"]["feed"],
-        polkapad_contract,
-        whitelist_contract,
-        { "from": owner_account })
+        polkapad,
+        whitelist,
+        { "from": owner })
 
     return contract
 
-def get_account(): 
+def get_account(account):
+    dev_index = account[0]
+    private_key = account[1]
+    
     if network.show_active() == "development":
-        return accounts[0]
+        return accounts[dev_index]
     else:
-        return accounts.add(config["addresses"]["private_key"])
+        return accounts.add(config["addresses"][private_key])
+
+def deploy(owner, multisig, burner):
+    default_max_allocation_size = 100 * 10e7
+
+    whitelist = deploy_whitelist(owner, multisig, )
+    plpd = deploy_plpd(owner, multisig)
+    locker = deploy_locker(owner, multisig, burner, plpd, whitelist)
+
+    whitelist.setDefaultAllocationSize(default_max_allocation_size, { "from": multisig })
+    plpd.setLockerContractAddress(locker, { "from": multisig })
 
 def main():
-    print("Deploying is started...")
+    owner = get_account(OWNER)
+    multisig = get_account(MULTISIG)
+    burner = get_account(BURNER)
 
-    multisig_account = accounts[1]
-
-    whitelist = deploy_whitelist()
-    plpd = deploy_plpd(multisig_account)
-    locker = deploy_locker(plpd, whitelist)
-
-    plpd.setLockerContractAddress(locker, { "from": multisig_account })
-
-    print("Contracts has deployed")
+    deploy(owner, multisig, burner)
