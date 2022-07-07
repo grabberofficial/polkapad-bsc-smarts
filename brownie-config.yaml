@@ -11,8 +11,8 @@ addresses:
   dot: ${BSC_DOT_ADDRESS}
   dot_owner: ${BSC_DOT_OWNER}
   feed: ${BSC_DOT_USD}
-  multisig_wallet: ${MULTISIG_ADDRESS}
-  account: ${PUBLIC_KEY}
-  private_key: ${PRIVATE_KEY}
+  owner_pk: ${OWNER_PK}
+  multisig_pk: ${MULTISIG_PK}
+  burner_pk: ${BURNER_PK}
 networks:
     default: ${DEFAULT_NETWORK}

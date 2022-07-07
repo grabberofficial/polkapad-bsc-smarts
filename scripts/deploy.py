@@ -6,18 +6,19 @@ BURNER = (2, "burner_pk")
 
 def deploy_whitelist(owner, multisig, default_max_allocation_size):
     contract = Whitelist.deploy(
-        multisig, 
-        default_max_allocation_size, 
+        multisig,
         { "from": owner })
+
+    contract.setDefaultAllocationSize(default_max_allocation_size, { "from": multisig })
 
     return contract
 
 def deploy_plpd(owner, multisig):
     contract = PolkapadERC20.deploy(
-    "Polkapad", 
-    "PLPD", 
-    multisig, 
-    { "from": owner })
+        "Polkapad", 
+        "PLPD", 
+        multisig, 
+        { "from": owner })
 
     return contract
 
@@ -45,11 +46,10 @@ def get_account(account):
 def deploy(owner, multisig, burner):
     default_max_allocation_size = 100 * 10e7
 
-    whitelist = deploy_whitelist(owner, multisig, )
+    whitelist = deploy_whitelist(owner, multisig, default_max_allocation_size)
     plpd = deploy_plpd(owner, multisig)
     locker = deploy_locker(owner, multisig, burner, plpd, whitelist)
 
-    whitelist.setDefaultAllocationSize(default_max_allocation_size, { "from": multisig })
     plpd.setLockerContractAddress(locker, { "from": multisig })
 
 def main():

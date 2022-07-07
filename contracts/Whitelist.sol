@@ -4,7 +4,7 @@ pragma solidity ^0.8.7;
 
 contract Whitelist {
 
-    mapping (address => bool) public whitelist;
+    mapping (address => bool)    public whitelist;
     mapping (address => uint256) public allocationSizes;
 
     uint256 public defaultAllocationSize;
@@ -17,12 +17,8 @@ contract Whitelist {
         uint256 oldMaxAllocationSize, 
         uint256 newMaxAllocationSize);
 
-    constructor(
-        address multisigAddress_, 
-        uint256 defaultAllocationSize_) {
+    constructor(address multisigAddress_) {
         multisigAddress = multisigAddress_;
-        
-        defaultAllocationSize = defaultAllocationSize_;
     }
 
     modifier multisig {
@@ -55,5 +51,11 @@ contract Whitelist {
         allocationSizes[address_] = newMaxAllocationSize_;
 
         emit ChangedMaxAllocationSize(address_, oldMaxAllocationSize, newMaxAllocationSize_);
+    }
+
+    function setDefaultAllocationSize(uint256 allocationSize_) public multisig {
+        require(allocationSize_ > 0);
+
+        defaultAllocationSize = allocationSize_;
     }
 }

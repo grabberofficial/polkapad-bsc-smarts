@@ -12,24 +12,32 @@ contract Locker {
     using SafeMath for uint256;
 
     mapping (address => uint256) public _locks;
+    mapping (address => string)  public _polkadotAddresses;
 
-    ERC20 public _dotContract;
-    PolkapadERC20 public _plpdContract;
-    Whitelist public _whitelistContract;
+    ERC20           public _dotContract;
+    PolkapadERC20   public _plpdContract;
+    Whitelist       public _whitelistContract;
 
     AggregatorV3Interface public _dotPriceFeed;
 
     address public _multisig;
+    address public _burner;
 
-    event Locked(address indexed account, uint256 allocation);
+    bool public _canBurn;
+    uint public _burnBlockNumber;
+
+    event Locked(address indexed account, string polkadotAddress, uint256 allocation);
+    event Burned(address indexed account, uint256 burned);
 
     constructor(
         address multisig_,
+        address burner_,
         address dotContract_, 
         address dotFeedContract_,
         address plpdContract_,
         address whitelistContract_) {
         _multisig = multisig_;
+        _burner = burner_;
 
         _plpdContract = PolkapadERC20(plpdContract_);
         _dotContract = ERC20(dotContract_);
@@ -48,7 +56,14 @@ contract Locker {
         _;
     }
 
+    modifier burner {
+        require(msg.sender == _burner);
+        _;
+    }
+
     function lock(uint256 allocation_) public whitelisted {
+        require(_canBurn == false, "Locker: You cannot lock at the moment");
+
         uint256 dotPrice = getLatestPrice();
 
         uint256 lockedAllocation = _locks[msg.sender];
@@ -70,13 +85,26 @@ contract Locker {
 
         _locks[msg.sender] = lockedAllocation.add(allocation_);
 
-        emit Locked(msg.sender, allocation_);
+        emit Locked(msg.sender, _polkadotAddresses[msg.sender], allocation_);
     }
 
-    function burnPlpd(address address_) public multisig {
-        uint256 plpdAmount = _plpdContract.balanceOf(address_);
-        _plpdContract.burn(address_, plpdAmount);
-     }
+    function activateBurning() public multisig {
+        _canBurn = !_canBurn;
+        _burnBlockNumber = block.number;
+    }
+
+    function burnPlpd(address[] memory addresses_) public burner {
+        require(_canBurn == true);
+        
+        for (uint256 i = 0; i < addresses_.length; i++) {
+            address address_ = addresses_[i];
+            
+            uint256 plpdAmount = _plpdContract.balanceOf(address_);
+            _plpdContract.burn(address_, plpdAmount);
+
+            emit Burned(address_, plpdAmount);
+        }
+    }
 
     function getLatestPrice() public view returns (uint256) {
         (
