@@ -26,6 +26,8 @@ contract Locker {
     bool public _canBurn;
     uint public _burnBlockNumber;
 
+    uint256 public _plpdPrice;
+
     event Locked(address indexed account, string polkadotAddress, uint256 allocation);
     event Burned(address indexed account, uint256 burned);
 
@@ -67,7 +69,7 @@ contract Locker {
         uint256 dotPrice = getLatestPrice();
 
         uint256 lockedAllocation = _locks[msg.sender];
-        uint256 allocationInUsdt = lockedAllocation.add(allocation_).mul(dotPrice);
+        uint256 allocationInUsdt = lockedAllocation.add(allocation_).mul(dotPrice) / 1e18;
 
         uint256 maxAllocationSize = _whitelistContract.allocationSizes(msg.sender);
         if (maxAllocationSize == 0) {
@@ -80,12 +82,16 @@ contract Locker {
 
         _dotContract.transferFrom(msg.sender, _multisig, allocation_);
 
-        uint256 plpdAmount = allocationInUsdt.mul(3).div(10);
+        uint256 plpdAmount = allocationInUsdt.mul(_plpdPrice) / 1e18;
         _plpdContract.mint(msg.sender, plpdAmount);
 
         _locks[msg.sender] = lockedAllocation.add(allocation_);
 
         emit Locked(msg.sender, _polkadotAddresses[msg.sender], allocation_);
+    }
+
+    function setPlpdPrice(uint256 price) public multisig {
+        _plpdPrice = price;
     }
 
     function activateBurning() public multisig {
@@ -114,6 +120,10 @@ contract Locker {
             /*uint timeStamp*/,
             /*uint80 answeredInRound*/
         ) = _dotPriceFeed.latestRoundData();
-        return uint256(price);
+
+        uint256 adjustedDecimals = 1e18 / 1e8;
+        uint256 adjustedPrice = uint256(price).mul(adjustedDecimals);
+
+        return adjustedPrice;
     }
 }

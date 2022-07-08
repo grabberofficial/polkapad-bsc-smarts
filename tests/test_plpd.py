@@ -1,5 +1,6 @@
-from brownie import accounts, reverts, config, Contract
+from brownie import accounts, reverts
 from brownie.exceptions import VirtualMachineError
+from utils.utils import get_contract_from_abi
 from scripts.deploy import *
 
 import pytest
@@ -13,16 +14,47 @@ def locker(plpd, whitelist):
     return deploy_locker(plpd, whitelist)
 
 @pytest.fixture
-def plpd():
-    return deploy_plpd(accounts[1])
+def dot():
+    return get_contract_from_abi(
+        "abi/dot.json", 
+        "Polkadot", 
+        "dot")
+
+@pytest.fixture
+def dot_feed():
+    return _get_contract_from_abi(
+        "abi/dot_feed.json", 
+        "Chainlink: DOT/USDT Price Feed", 
+        "feed")
+
+@pytest.fixture
+def whitelist(owner, multisig):
+    return deploy_whitelist(owner, multisig, 100 * 1e18)
+
+@pytest.fixture
+def locker(owner, multisig, burner, plpd, whitelist):
+    return deploy_locker(owner, multisig, burner, plpd, whitelist)
+
+
+@pytest.fixture
+def plpd(owner, multisig):
+    return deploy_plpd(owner, multisig)
+
+@pytest.fixture
+def owner():
+    return accounts[0]
 
 @pytest.fixture
 def multisig():
     return accounts[1]
 
 @pytest.fixture
-def sender():
+def burner():
     return accounts[2]
+
+@pytest.fixture
+def sender():
+    return accounts[3]
 
 def test_revert_transfer(plpd, sender):
     amount = 100

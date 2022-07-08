@@ -1,6 +1,7 @@
 from brownie import accounts
 from brownie.exceptions import VirtualMachineError
-from scripts.deploy import deploy_whitelist
+from utils.utils import get_contract_from_abi
+from scripts.deploy import *
 
 import pytest
 
@@ -9,8 +10,51 @@ def whitelist():
     return deploy_whitelist()
 
 @pytest.fixture
+def locker(plpd, whitelist):
+    return deploy_locker(plpd, whitelist)
+
+@pytest.fixture
+def dot():
+    return get_contract_from_abi(
+        "abi/dot.json", 
+        "Polkadot", 
+        "dot")
+
+@pytest.fixture
+def dot_feed():
+    return get_contract_from_abi(
+        "abi/dot_feed.json", 
+        "Chainlink: DOT/USDT Price Feed", 
+        "feed")
+
+@pytest.fixture
+def whitelist(owner, multisig):
+    return deploy_whitelist(owner, multisig, 100 * 1e18)
+
+@pytest.fixture
+def locker(owner, multisig, burner, plpd, whitelist):
+    return deploy_locker(owner, multisig, burner, plpd, whitelist)
+
+
+@pytest.fixture
+def plpd(owner, multisig):
+    return deploy_plpd(owner, multisig)
+
+@pytest.fixture
+def owner():
+    return accounts[0]
+
+@pytest.fixture
 def multisig():
     return accounts[1]
+
+@pytest.fixture
+def burner():
+    return accounts[2]
+
+@pytest.fixture
+def sender():
+    return accounts[3]
 
 def test_added_to_whitelist(whitelist, multisig):
     participiant = accounts[2]

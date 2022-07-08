@@ -32,6 +32,8 @@ def deploy_locker(owner, multisig, burner, polkapad, whitelist):
         whitelist,
         { "from": owner })
 
+    contract.setPlpdPrice(0.3 * 1e18, { "from": multisig })
+
     return contract
 
 def get_account(account):
@@ -44,7 +46,7 @@ def get_account(account):
         return accounts.add(config["addresses"][private_key])
 
 def deploy(owner, multisig, burner):
-    default_max_allocation_size = 100 * 10e7
+    default_max_allocation_size = 100 * 1e18
 
     whitelist = deploy_whitelist(owner, multisig, default_max_allocation_size)
     plpd = deploy_plpd(owner, multisig)
