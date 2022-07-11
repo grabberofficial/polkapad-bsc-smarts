@@ -21,13 +21,6 @@ def dot():
         "dot")
 
 @pytest.fixture
-def dot_feed():
-    return get_contract_from_abi(
-        "abi/dot_feed.json", 
-        "Chainlink: DOT/USDT Price Feed", 
-        "feed")
-
-@pytest.fixture
 def whitelist(owner, multisig):
     return deploy_whitelist(owner, multisig, 100 * 1e18)
 

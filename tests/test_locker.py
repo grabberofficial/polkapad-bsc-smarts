@@ -13,13 +13,6 @@ def dot():
         "dot")
 
 @pytest.fixture
-def dot_feed():
-    return get_contract_from_abi(
-        "abi/dot_feed.json", 
-        "Chainlink: DOT/USDT Price Feed", 
-        "feed")
-
-@pytest.fixture
 def whitelist(owner, multisig):
     return deploy_whitelist(owner, multisig, 100 * 1e18)
 
@@ -104,7 +97,7 @@ def test_lock_when_sender_is_not_in_whitelist(dot, locker, plpd, sender, multisi
     with pytest.raises(VirtualMachineError):
         locker.lock(actual_allocation_size, { "from": sender })
 
-def test_lock_more_than_dots_on_account(dot, dot_feed, whitelist, locker, plpd, multisig, sender):
+def test_lock_more_than_dots_on_account(dot, whitelist, locker, plpd, multisig, sender):
     max_allocation_size = 200 * 1e18
     actual_allocation_size = 5 * 1e18
     actual_dots_amount = 1 * 1e18
@@ -122,7 +115,7 @@ def test_lock_more_than_dots_on_account(dot, dot_feed, whitelist, locker, plpd, 
     with pytest.raises(VirtualMachineError):
         locker.lock(actual_allocation_size, { "from": sender })
 
-def test_lock_when_canBurn_false(dot, dot_feed, burner, whitelist, locker, plpd, multisig, sender):
+def test_lock_when_canBurn_false(dot, whitelist, locker, plpd, multisig, sender):
     max_allocation_size = 60 * 1e18
     actual_allocation_size = 5 * 1e18
 
@@ -147,7 +140,7 @@ def test_burn_when_canBurn_false(locker, burner):
     with pytest.raises(VirtualMachineError):
         locker.burnPlpd([], { "from": burner })
 
-def test_burn_when_canBurn_true(dot, dot_feed, whitelist, plpd, locker, burner, multisig, sender):
+def test_burn_when_canBurn_true(dot, whitelist, plpd, locker, burner, multisig, sender):
     max_allocation_size = 60 * 1e18
     actual_allocation_size = 5 * 1e18
 
