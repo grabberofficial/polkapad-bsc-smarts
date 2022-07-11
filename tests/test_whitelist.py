@@ -6,14 +6,6 @@ from scripts.deploy import *
 import pytest
 
 @pytest.fixture
-def whitelist():
-    return deploy_whitelist()
-
-@pytest.fixture
-def locker(plpd, whitelist):
-    return deploy_locker(plpd, whitelist)
-
-@pytest.fixture
 def dot():
     return get_contract_from_abi(
         "abi/dot.json", 
@@ -21,20 +13,20 @@ def dot():
         "dot")
 
 @pytest.fixture
-def whitelist(owner, multisig):
-    return deploy_whitelist(owner, multisig, 100 * 1e18)
+def whitelist(deployer, multisig):
+    return deploy_whitelist(deployer, multisig, 100 * 1e18)
 
 @pytest.fixture
-def locker(owner, multisig, burner, plpd, whitelist):
-    return deploy_locker(owner, multisig, burner, plpd, whitelist)
+def locker(deployer, multisig, burner, plpd, whitelist):
+    return deploy_locker(deployer, multisig, burner, plpd, whitelist)
 
 
 @pytest.fixture
 def plpd(owner, multisig):
-    return deploy_plpd(owner, multisig)
+    return deploy_plpd(deployer, multisig)
 
 @pytest.fixture
-def owner():
+def deployer():
     return accounts[0]
 
 @pytest.fixture

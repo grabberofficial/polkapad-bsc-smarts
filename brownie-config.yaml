@@ -11,8 +11,24 @@ addresses:
   dot: ${BSC_DOT_ADDRESS}
   dot_owner: ${BSC_DOT_OWNER}
   feed: ${BSC_DOT_USD}
-  owner_pk: ${OWNER_PK}
-  multisig_pk: ${MULTISIG_PK}
-  burner_pk: ${BURNER_PK}
+  multisig: ${MULTISIG}
+  burner: ${BURNER}
+  deployer_pk: ${DEPLOYER_PK}
 networks:
     default: ${DEFAULT_NETWORK}
+    development: 
+      gas_limit: max
+      gas_buffer: 1
+      gas_price: 0
+      max_fee: null
+      priority_fee: null
+      reverting_tx_gas_limit: max
+      default_contract_owner: true
+      cmd_settings:
+        port: 8545
+        gas_limit: 12000000
+        accounts: 10
+        chain_id: 56
+        evm_version: istanbul
+        fork: https://bsc-dataseed.binance.org
+        mnemonic: brownie
